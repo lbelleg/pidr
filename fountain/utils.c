@@ -60,6 +60,20 @@ void getXored(int tab[],int l,int nbBloc) {
 	}
 }
 
-int xor (char *a, char* b) {
+int xor (char *a, char* b, char * dest, int size) {
+	int i;	
+	for (i=0;i<size;i++) {
+	  //printf("a[%d] : %d \n",i,(int)*(a+i));
+	  *(dest+i) = 48+(((int)*(a+i))+((int)*(b+i)))%2;
+	}
+}
+
+void printbin (int code, char *bcode) {
+  int i,j;
+  j=code;
+  for (i=7;i>0;i--) {
+    if(j%2) bcode[i] = '1';
+    j = j/2;
+  }
 
 }

@@ -1,13 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 #include "mtwist.c"
 #include "utils.c"
+#include <string.h>
 #define MAX_PACKET 500
 #define MAX_TO_SEND 3
+#define PACKET_SIZE 256
 
 int main (int argc, char *argv[]) {
 
 	int i,j;
+	int fd;
 	uint32_t timeSeed;
 	uint32_t seed;
 	mt_state state;
@@ -15,14 +21,29 @@ int main (int argc, char *argv[]) {
 	int packets[MAX_PACKET];
 	double rand;
 	int degree;
-	char packet[256];
+	char * filename;
+	char t [64]={0};
+	char packet[PACKET_SIZE];
+	const char *filemap;
 	
 	/**** Initialisation ****/
 	state = mt_default_state;
 	timeSeed = mt_goodseed();
-	blocks=4; //to remove
-	// blocks = getBlock(argv[0]);
-	
+	/*** block count ***/
+	if (argc>1) {
+	  filename = argv[1];
+	} else {
+	  printf("usage : the first arg has to be a filename\n");
+	  exit(0);
+	}
+	 struct stat stt;
+	 stat(filename,&stt);
+	 printf("%d\n",(int)stt.st_size);
+	 blocks = (int) stt.st_size/PACKET_SIZE;       
+	/*** File mapping ***/
+	 fd = open(filename, O_RDONLY);
+	filemap = mmap(NULL, stt.st_size,PROT_READ,MAP_SHARED,fd,0);
+
 	double distribute[blocks+1];//store the ideal soliton distribution
 	int xoredBlocks[blocks];
 	mt_seed32new(timeSeed); // On initialise avec baseSeed
@@ -61,6 +82,24 @@ int main (int argc, char *argv[]) {
 
 		/*** UDP packet building ***/
 
+		sprintf(t,"%064d",seed);
+		strcpy(packet,t);
+		sprintf(t,"%064d",blocks);
+		strcat(packet,t);
+		
+		printf("packet : %s \n",packet);
+		/*** filename ***/
+		char name[500] ;
+		sprintf(t,"%d",i);
+		strcpy(name,"packet");
+		strcat(name,t);
+		strcat(name,".yay");
+		//printf("%s\n",name);
+		
+		/*** filling ***/
+		FILE *fp = fopen (name,"wb");
+		fwrite(packet, 1, sizeof(packet), fp);
+		fclose(fp);
 		/*** Seed update ***/
 		seed ++;
 	}
